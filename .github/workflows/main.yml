@@ -1,28 +1,23 @@
-name: vps
-
-#Controls when the workflow will run
+name: JokesGamer
+ 
 on:
-  #Triggers the workflow on push or pull request events but only for the "main" branch
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
-  #Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-#A workflow run is made up of one or more jobs that can run sequentially or in parallel
+  workflow_dispatch:          # ✅ Manual "Run workflow" button
+  repository_dispatch:        # ✅ Can still be triggered by API or other workflows
+    types: [create-vps]
+ 
 jobs:
-  #This workflow contains a single job called "build"
-  build:
-    #The type of runner that the job will run on
+  start-vps:
     runs-on: ubuntu-latest
-
-    #Steps represent a sequence of tasks that will be executed as part of the job
+    timeout-minutes: 360  # 6 hours max
+ 
     steps:
-      #Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-uses: actions/checkout@v4
-
-      #Runs a single command using the runners shell
-name: run vps
-        run: curl -sSf https://sshx.io/get | sh -s run
+      - name: 🔐 Start tmate session
+        run: |
+          echo "⚙️ Launching tmate..."
+          sudo apt update && sudo apt install -y tmate
+          tmate -S /tmp/tmate.sock new-session -d
+          tmate -S /tmp/tmate.sock wait tmate-ready
+          SSH=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
+          echo "$SSH" > "links/${{ github.event.client_payload.vps_name || 'manual-vps' }}.txt"
+          echo "✅ SSH Ready: $SSH"
+          sleep 60  # give time for GitHub to sync
